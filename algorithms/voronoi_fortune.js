@@ -1,4 +1,4 @@
-import { PriorityQueue } from './priorityqueue.js'
+import { PriorityQueue } from '../data_structures/priorityqueue.js'
 
 let opposites = { l: 'r', r: 'l' }
 
