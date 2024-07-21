@@ -1,4 +1,4 @@
-import { Rectangle } from './rectangle.js'
+import { Rectangle } from '../data_types/rectangle.js'
 
 class QuadTreeData {
     constructor(x, y, data) {
