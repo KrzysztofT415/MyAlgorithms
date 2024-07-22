@@ -1,28 +1,30 @@
-import { xyToRgb } from '../utils.js'
-
-export class VoronoiDiagram {
+export default class VoronoiDiagram {
     constructor(width, height) {
         this.width = width
         this.height = height
         this.sites = []
         this.voronoi = []
-        this.isPlane = true
+        this.rendersImage = true
+        this.distance_type = 'manhattan'
+        this.degree = 3
     }
 
     distance(x1, x2, y1, y2) {
-        if (this.params.type == 'euclidean') return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)) // Euclidean distance
-        if (this.params.type == 'manhattan') return Math.abs(x1 - x2) + Math.abs(y1 - y2) // Manhattan distance
-        return Math.pow(Math.pow(Math.abs(x1 - x2), this.params.degree) + Math.pow(Math.abs(y1 - y2), this.params.degree), 1 / this.params.degree) // Smooth distance
+        if (this.distance_type == 'euclidean') return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)) // Euclidean distance
+        if (this.distance_type == 'manhattan') return Math.abs(x1 - x2) + Math.abs(y1 - y2) // Manhattan distance
+        return Math.pow(Math.pow(Math.abs(x1 - x2), this.degree) + Math.pow(Math.abs(y1 - y2), this.degree), 1 / this.degree) // Smooth distance
     }
 
     sample(x, y) {
+        const neighbours = this.getNeighbours(x, y)
+        if (neighbours.length == 0) return 0
         let n = 0
-        let d = this.distance(this.sites[0].x, x, this.sites[0].y, y)
-        for (let c = 1; c < this.sites.length; c++) {
-            const d_tmp = this.distance(this.sites[c].x, x, this.sites[c].y, y)
-            if (d_tmp < d) [n, d] = [c, d_tmp]
-        }
-        return n
+        let d = this.distance(neighbours[0].x, x, neighbours[0].y, y)
+        neighbours.forEach((neighbour, index) => {
+            const d_tmp = this.distance(neighbour.x, x, neighbour.y, y)
+            if (d_tmp < d) [n, d] = [index, d_tmp]
+        })
+        return this.sites.indexOf(neighbours[n])
     }
 
     makeMap = () => {
@@ -50,9 +52,9 @@ export class VoronoiDiagram {
         return data
     }
 
-    calculateVoronoi = () => {
-        this.colors = this.sites.map((p) => xyToRgb(p.x, p.y, this.width, this.height))
+    calculateVoronoi = (getNeighbours) => {
+        this.getNeighbours = getNeighbours ?? (() => this.sites)
         if (this.sites.length == 0) return
-        this.imageData = this.makeImageData()
+        this.voronoi = this.makeImageData()
     }
 }

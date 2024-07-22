@@ -71,14 +71,14 @@ class QuadTreeNode {
         }
     }
 
-    getDataLength() {
+    getDataLength = () => {
         if (this.isLeaf()) return this.data_stored.length
         let sum = 0
         for (const child of this.children) sum += child.getDataLength()
         return sum
     }
 
-    reverseSubdivision() {
+    reverseSubdivision = () => {
         if (this.isLeaf()) {
             this.parent.children = []
             for (const data of this.data_stored) this.parent.insert(data)
@@ -87,13 +87,27 @@ class QuadTreeNode {
         for (const child of this.children) child.reverseSubdivision()
     }
 
-    getNode(data) {
+    getNode = (data) => {
         if (this.isLeaf()) return this
         for (const child of this.children) {
             if (child.contains(data)) {
                 return child.getNode(data)
             }
         }
+    }
+
+    query = (range, found) => {
+        if (!range.intersects(this.boundary)) return found
+        if (this.isLeaf()) {
+            for (let data of this.data_stored) {
+                if (range.contains(data)) found.push(data.data_stored)
+            }
+            return found
+        }
+        for (const child of this.children) {
+            child.query(range, found)
+        }
+        return found
     }
 }
 
@@ -111,4 +125,6 @@ export class QuadTree {
     }
 
     insert = (x, y, data) => this.root.insert(new QuadTreeData(x, y, data))
+    query = (range) => this.root.query(range, [])
+    find = (x, y) => this.root.getNode({ x, y })
 }

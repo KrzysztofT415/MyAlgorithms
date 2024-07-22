@@ -67,6 +67,51 @@ class Geometry {
         if (type == 's') return Math.pow(dx * dx * dx + dy * dy * dy, 1 / 3) // smooth
         return Math.sqrt(dx * dx + dy * dy) // euclidean
     }
+
+    static clipPolygonToBoundary = (subjectPolygon, boundary) => {
+        let outputList = subjectPolygon
+        let cp1, cp2, s, e
+
+        const clipPolygon = [
+            [boundary.x, boundary.y],
+            [boundary.x + boundary.w, boundary.y],
+            [boundary.x + boundary.w, boundary.y + boundary.h],
+            [boundary.x, boundary.y + boundary.h],
+        ]
+
+        for (let j = 0; j < clipPolygon.length; j++) {
+            const inputList = outputList
+            outputList = []
+            cp1 = clipPolygon[j]
+            cp2 = clipPolygon[(j + 1) % clipPolygon.length]
+
+            for (let i = 0; i < inputList.length; i++) {
+                s = inputList[i]
+                e = inputList[(i + 1) % inputList.length]
+
+                if (Geometry.inside(e, cp1, cp2)) {
+                    if (!Geometry.inside(s, cp1, cp2)) {
+                        outputList.push(Geometry.intersection(cp1, cp2, s, e))
+                    }
+                    outputList.push(e)
+                } else if (Geometry.inside(s, cp1, cp2)) {
+                    outputList.push(Geometry.intersection(cp1, cp2, s, e))
+                }
+            }
+        }
+        return outputList
+    }
+
+    static inside = (p, cp1, cp2) => (cp2[0] - cp1[0]) * (p[1] - cp1[1]) > (cp2[1] - cp1[1]) * (p[0] - cp1[0])
+
+    static intersection = (cp1, cp2, s, e) => {
+        const dc = [cp1[0] - cp2[0], cp1[1] - cp2[1]]
+        const dp = [s[0] - e[0], s[1] - e[1]]
+        const n1 = cp1[0] * cp2[1] - cp1[1] * cp2[0]
+        const n2 = s[0] * e[1] - s[1] * e[0]
+        const n3 = 1.0 / (dc[0] * dp[1] - dc[1] * dp[0])
+        return [(n1 * dp[0] - n2 * dc[0]) * n3, (n1 * dp[1] - n2 * dc[1]) * n3]
+    }
 }
 
 class EdgeList {
@@ -116,13 +161,13 @@ class EdgeList {
     rightRegion = (he) => (he.edge == null ? null : he.edge.region[opposites[he.side]])
 }
 
-export class VoronoiDiagram {
+export default class VoronoiDiagram {
     constructor(width, height) {
         this.width = width
         this.height = height
         this.sites = []
         this.voronoi = []
-        this.isPlane = false
+        this.rendersImage = false
     }
 
     pointToPriority = (p) => p.ystar * this.width ** 2 + p.vertex.x
@@ -135,7 +180,7 @@ export class VoronoiDiagram {
         const slope = (d - b) / (c - a)
         const perpendicularSlope = -1 / slope
 
-        function lineIntersection(x1, y1, x2, y2) {
+        const lineIntersection = (x1, y1, x2, y2) => {
             const intercept = midY - perpendicularSlope * midX
             let points = []
 
@@ -157,14 +202,14 @@ export class VoronoiDiagram {
 
         if (!isHorizontal) {
             if (p2.x == 0) [p1, p2] = [p2, p1]
-            polygon1 = [[0, 0], p1, p2, [width, 0]]
-            polygon2 = [p1, [0, height], [width, height], p2]
+            polygon1 = { borders: [[0, 0], p1, p2, [width, 0]], center: this.sites[0] }
+            polygon2 = { borders: [p1, [0, height], [width, height], p2], center: this.sites[1] }
             if (d > b) this.voronoi = [polygon1, polygon2]
             else this.voronoi = [polygon2, polygon1]
         } else {
             if (p2.y == 0) [p1, p2] = [p2, p1]
-            polygon1 = [[0, 0], p1, p2, [0, height]]
-            polygon2 = [p1, [width, 0], [width, height], p2]
+            polygon1 = { borders: [[0, 0], p1, p2, [0, height]], center: this.sites[0] }
+            polygon2 = { borders: [p1, [width, 0], [width, height], p2], center: this.sites[1] }
             if (c > a) this.voronoi = [polygon1, polygon2]
             else this.voronoi = [polygon2, polygon1]
         }
@@ -172,7 +217,7 @@ export class VoronoiDiagram {
 
     calculateVoronoi() {
         if (this.sites.length == 1) {
-            this.voronoi = [[[0, 0], [this.width, 0], [this.width, this.height], [0, this.height],],] // prettier-ignore
+            this.voronoi = [{borders: [[0, 0], [this.width, 0], [this.width, this.height], [0, this.height],], center: this.sites[0]}] // prettier-ignore
             return
         }
 
@@ -181,8 +226,6 @@ export class VoronoiDiagram {
             this.twoPointsCase()
             return
         }
-
-        // TODO: fix flashing of the polygons[sites[0]]
 
         let polygons = this.sites.map(() => [])
 
@@ -308,17 +351,22 @@ export class VoronoiDiagram {
         for (lbnd = edgeList.leftEnd.r; lbnd != edgeList.rightEnd; lbnd = lbnd.r) callback(lbnd.edge)
 
         // Reconnect the polygon segments into counterclockwise loops.
-        polygons = polygons.map((polygon, i) => {
-            let [cx, cy] = [this.sites[i].x, this.sites[i].y]
+        polygons = polygons.map((polygon, index) => {
+            let [cx, cy] = [this.sites[index].x, this.sites[index].y]
             let [w2, h2] = [this.width ** 3, this.height ** 3]
             polygon.forEach((v) => {
                 v.angle = Math.atan2(v[0] - cx, v[1] - cy)
                 v[0] = Math.min(Math.max(-w2, v[0]), w2)
                 v[1] = Math.min(Math.max(-h2, v[1]), h2)
             })
-            return polygon
+            polygon = polygon
                 .sort((a, b) => a.angle - b.angle) //
                 .filter((d, i) => !i || d.angle - polygon[i - 1].angle > 1e-10)
+
+            return {
+                borders: Geometry.clipPolygonToBoundary(polygon, this.sites[index].boundary),
+                center: this.sites[index],
+            }
         })
 
         this.voronoi = polygons
