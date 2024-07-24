@@ -65,13 +65,15 @@ export class OpenSimplexNoise {
         }
     }
 
-    byte = (v) => {
+    byte(v) {
         if (v > 127) return v - 256
         if (v < -128) return v + 256
         return v
     }
 
-    fastFloor = (x) => Math.floor(x)
+    fastFloor(x) {
+        return Math.floor(x)
+    }
 
     //2D OpenSimplex Noise.
     eval2d(x, y) {

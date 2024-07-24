@@ -1,8 +1,9 @@
 export class Particle {
-    constructor(x, y, v, boundary) {
+    constructor(x, y, v, r, boundary) {
         this.x = x
         this.y = y
         this.v = v
+        this.r = r
         this.boundary = boundary
     }
 
@@ -13,7 +14,7 @@ export class Particle {
         yield this.boundary
     }
 
-    update = () => {
+    update() {
         if (!this.v.x && !this.v.y) return
         if (this.x + this.v.x < this.boundary.x || this.boundary.w < this.x + this.v.x) this.v.x *= -1
         if (this.y + this.v.y < this.boundary.y || this.boundary.h < this.y + this.v.y) this.v.y *= -1

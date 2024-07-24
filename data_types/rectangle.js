@@ -13,17 +13,21 @@ export class Rectangle {
         yield this.h
     }
 
-    contains = (point) =>
-        this.x <= point.x && //
-        point.x <= this.x + this.w &&
-        this.y <= point.y &&
-        point.y <= this.y + this.h
+    contains(point) {
+        return (
+            this.x <= point.x && //
+            point.x <= this.x + this.w &&
+            this.y <= point.y &&
+            point.y <= this.y + this.h
+        )
+    }
 
-    intersects = (other) =>
-        !(
+    intersects(other) {
+        return !(
             other.x > this.x + this.w || //
             other.x + other.w < this.x ||
             other.y > this.y + this.h ||
             other.y + other.h < this.y
         )
+    }
 }

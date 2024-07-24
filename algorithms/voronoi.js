@@ -27,7 +27,7 @@ export default class VoronoiDiagram {
         return this.sites.indexOf(neighbours[n])
     }
 
-    makeMap = () => {
+    makeMap() {
         const map = Array.from(Array(this.width), () => new Array(this.height))
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
@@ -37,7 +37,7 @@ export default class VoronoiDiagram {
         return map
     }
 
-    makeImageData = () => {
+    makeImageData() {
         const data = []
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
@@ -52,7 +52,7 @@ export default class VoronoiDiagram {
         return data
     }
 
-    calculateVoronoi = (getNeighbours) => {
+    calculateVoronoi(getNeighbours) {
         this.getNeighbours = getNeighbours ?? (() => this.sites)
         if (this.sites.length == 0) return
         this.voronoi = this.makeImageData()

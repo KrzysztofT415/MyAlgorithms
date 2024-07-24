@@ -4,7 +4,7 @@ let opposites = { l: 'r', r: 'l' }
 
 class Geometry {
     // Returns an edge object that represents the line (in the form of ax + by = c) that bisects two sites.
-    static bisect = (s1, s2) => {
+    static bisect(s1, s2) {
         let m = (s2.x - s1.x) / (s1.y - s2.y)
         let [mx, my] = [Math.abs((s1.x + s2.x) / 2), Math.abs((s1.y + s2.y) / 2)]
         let [a, b, c] = [-1 * m, 1, -1 * (m * mx - my)]
@@ -12,7 +12,7 @@ class Geometry {
     }
 
     // Returns a coordinate (x,y) that is the intersection of two half edge objects.
-    static intersect = (el1, el2) => {
+    static intersect(el1, el2) {
         let [e1, e2] = [el1.edge, el2.edge]
         if (!e1 || !e2 || e1.region.r == e2.region.r) return null
 
@@ -35,7 +35,7 @@ class Geometry {
     }
 
     // Returns a bool.
-    static rightOf = (he, p) => {
+    static rightOf(he, p) {
         let e = he.edge,
             topsite = e.region.r,
             rightOfSite = p.x > topsite.x
@@ -53,14 +53,14 @@ class Geometry {
     }
 
     // Used to reconstruct the diagram.
-    static endPoint = (edge, side, site, callback) => {
+    static endPoint(edge, side, site, callback) {
         edge.ep[side] = site
         if (!edge.ep[opposites[side]]) return
         callback(edge)
     }
 
     // Computes the Euclidean distance between two coordinates (x, y)
-    static distance = (s, t, type) => {
+    static distance(s, t, type) {
         let dx = s.x - t.x,
             dy = s.y - t.y
         if (type == 'm') return Math.abs(dx) + Math.abs(dy) // manhattan
@@ -68,7 +68,7 @@ class Geometry {
         return Math.sqrt(dx * dx + dy * dy) // euclidean
     }
 
-    static clipPolygonToBoundary = (subjectPolygon, boundary) => {
+    static clipPolygonToBoundary(subjectPolygon, boundary) {
         let outputList = subjectPolygon
         let cp1, cp2, s, e
 
@@ -102,9 +102,11 @@ class Geometry {
         return outputList
     }
 
-    static inside = (p, cp1, cp2) => (cp2[0] - cp1[0]) * (p[1] - cp1[1]) > (cp2[1] - cp1[1]) * (p[0] - cp1[0])
+    static inside(p, cp1, cp2) {
+        return (cp2[0] - cp1[0]) * (p[1] - cp1[1]) > (cp2[1] - cp1[1]) * (p[0] - cp1[0])
+    }
 
-    static intersection = (cp1, cp2, s, e) => {
+    static intersection(cp1, cp2, s, e) {
         const dc = [cp1[0] - cp2[0], cp1[1] - cp2[1]]
         const dp = [s[0] - e[0], s[1] - e[1]]
         const n1 = cp1[0] * cp2[1] - cp1[1] * cp2[0]
@@ -123,7 +125,7 @@ class EdgeList {
     }
 
     // Constructs a half edge object.
-    createHalfEdge = (edge, side) => {
+    createHalfEdge(edge, side) {
         return {
             edge: edge,
             side: side,
@@ -134,7 +136,7 @@ class EdgeList {
     }
 
     // he represents a half edge.
-    insert = (lb, he) => {
+    insert(lb, he) {
         he.l = lb
         he.r = lb.r
         lb.r.l = he
@@ -143,7 +145,7 @@ class EdgeList {
 
     // site: site object
     // returns a half edge (leaf node?)
-    leftBound = (site) => {
+    leftBound(site) {
         let he = this.leftEnd
         he = he.r
         while (he != this.rightEnd && Geometry.rightOf(he, site)) he = he.r
@@ -151,14 +153,21 @@ class EdgeList {
         return he
     }
 
-    del = (he) => {
+    del(he) {
         he.l.r = he.r
         he.r.l = he.l
         he.edge = null
     }
 
-    leftRegion = (he) => (he.edge == null ? null : he.edge.region[he.side])
-    rightRegion = (he) => (he.edge == null ? null : he.edge.region[opposites[he.side]])
+    leftRegion(he) {
+        if (he.edge == null) return null
+        return he.edge.region[he.side]
+    }
+
+    rightRegion(he) {
+        if (he.edge == null) return null
+        return he.edge.region[opposites[he.side]]
+    }
 }
 
 export default class VoronoiDiagram {
@@ -170,9 +179,11 @@ export default class VoronoiDiagram {
         this.rendersImage = false
     }
 
-    pointToPriority = (p) => p.ystar * this.width ** 2 + p.vertex.x
+    pointToPriority(p) {
+        return p.ystar * this.width ** 2 + p.vertex.x
+    }
 
-    twoPointsCase = () => {
+    twoPointsCase() {
         let [a, b, c, d] = [this.sites[0].x, this.sites[0].y, this.sites[1].x, this.sites[1].y]
         let [width, height] = [this.width, this.height]
         const midX = (a + c) / 2
@@ -278,12 +289,12 @@ export default class VoronoiDiagram {
         let e, pm
 
         while (true) {
-            if (!eventQueue.isEmpty) {
+            if (!eventQueue.is_empty()) {
                 let elem = eventQueue.front
                 newIntStar = { x: elem.vertex.x, y: elem.ystar }
             }
 
-            if (newSite && (eventQueue.isEmpty || newSite.y < newIntStar.y || (newSite.y == newIntStar.y && newSite.x < newIntStar.x))) {
+            if (newSite && (eventQueue.is_empty() || newSite.y < newIntStar.y || (newSite.y == newIntStar.y && newSite.x < newIntStar.x))) {
                 lbnd = edgeList.leftBound(newSite)
                 rbnd = lbnd.r
 
@@ -309,7 +320,7 @@ export default class VoronoiDiagram {
                     eventQueue.insert(bisector, this.pointToPriority(bisector))
                 }
                 newSite = sitesList.shift()
-            } else if (!eventQueue.isEmpty) {
+            } else if (!eventQueue.is_empty()) {
                 lbnd = eventQueue.pop()
                 llbnd = lbnd.l
                 rbnd = lbnd.r

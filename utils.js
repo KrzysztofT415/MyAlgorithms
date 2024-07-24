@@ -23,17 +23,17 @@ export const prng = (seed) => {
     return { randInt, randDouble: () => lerp(randInt(), 0, 4294967295, 0, 1) }
 }
 
-export function xyToRgb(x, y, width, height) {
-    let hue = (x / width) * 360
-    let lightness = 100 - (y / height) * 100
-    return hslToRgb(hue, 100, lightness)
-}
-
-function hslToRgb(h, s, l) {
+export const hslToRgb = (h, s, l) => {
     s /= 100
     l /= 100
     const k = (n) => (n + h / 30) % 12
     const a = s * Math.min(l, 1 - l)
     const f = (n) => l - a * Math.max(Math.min(k(n) - 3, 9 - k(n), 1), -1)
     return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)]
+}
+
+export const xyToRgb = (x, y, w, h) => {
+    let hue = (x / w) * 360
+    let lightness = 100 - (y / h) * 100
+    return hslToRgb(hue, 100, lightness)
 }

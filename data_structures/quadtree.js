@@ -28,10 +28,14 @@ class QuadTreeNode {
         for (const child of this.children) yield* child.getNodes()
     }
 
-    contains = (p) => this.boundary.contains(p)
-    isLeaf = () => this.children.length == 0
+    contains(p) {
+        return this.boundary.contains(p)
+    }
+    isLeaf() {
+        return this.children.length == 0
+    }
 
-    insert = (data) => {
+    insert(data) {
         if (this.isLeaf()) {
             data.owner = this
             this.data_stored.push(data)
@@ -46,7 +50,7 @@ class QuadTreeNode {
         }
     }
 
-    subdivide = () => {
+    subdivide() {
         const [x, y, w, h, c] = [this.boundary.x, this.boundary.y, this.boundary.w / 2, this.boundary.h / 2, this.capacity]
         this.children[0] = new QuadTreeNode(this, new Rectangle(x, y, w, h), c)
         this.children[1] = new QuadTreeNode(this, new Rectangle(x + w, y, w, h), c)
@@ -57,7 +61,7 @@ class QuadTreeNode {
         this.data_stored = []
     }
 
-    remove = (data) => {
+    remove(data) {
         if (this.isLeaf()) {
             this.data_stored = this.data_stored.filter((p) => p.x != data.x && p.y != data.y)
             if (this.parent.getDataLength() <= this.capacity) this.parent.reverseSubdivision()
@@ -71,14 +75,14 @@ class QuadTreeNode {
         }
     }
 
-    getDataLength = () => {
+    getDataLength() {
         if (this.isLeaf()) return this.data_stored.length
         let sum = 0
         for (const child of this.children) sum += child.getDataLength()
         return sum
     }
 
-    reverseSubdivision = () => {
+    reverseSubdivision() {
         if (this.isLeaf()) {
             this.parent.children = []
             for (const data of this.data_stored) this.parent.insert(data)
@@ -87,7 +91,16 @@ class QuadTreeNode {
         for (const child of this.children) child.reverseSubdivision()
     }
 
-    getNode = (data) => {
+    collapse() {
+        if (this.isLeaf()) {
+            this.parent.data_stored.push(...this.data_stored)
+            this.data_stored = []
+        }
+        this.children.forEach((child) => child.collapse())
+        if (this.parent) this.parent.data_stored.push(...this.data_stored)
+    }
+
+    getNode(data) {
         if (this.isLeaf()) return this
         for (const child of this.children) {
             if (child.contains(data)) {
@@ -96,7 +109,7 @@ class QuadTreeNode {
         }
     }
 
-    query = (range, found) => {
+    query(range, found) {
         if (!range.intersects(this.boundary)) return found
         if (this.isLeaf()) {
             for (let data of this.data_stored) {
@@ -124,7 +137,20 @@ export class QuadTree {
         yield* this.root.getNodes()
     }
 
-    insert = (x, y, data) => this.root.insert(new QuadTreeData(x, y, data))
-    query = (range) => this.root.query(range, [])
-    find = (x, y) => this.root.getNode({ x, y })
+    changeCapacity(capacity) {
+        this.root.collapse()
+        this.root.capacity = capacity
+        this.root.subdivide()
+    }
+    insert(x, y, data) {
+        this.root.insert(new QuadTreeData(x, y, data))
+    }
+
+    query(range) {
+        return this.root.query(range, [])
+    }
+
+    find(x, y) {
+        return this.root.getNode({ x, y })
+    }
 }
